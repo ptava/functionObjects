@@ -106,24 +106,24 @@ public:
     };
     static const Enum<focusRegion> focusRegionNames_;
 
-    enum functionType
+    enum transferFunction
     {
         constant,
-        gaussian
+        oddScaler
     };
-    static const Enum<functionType> functionTypeNames_;
+    static const Enum<transferFunction> transferFunctionNames_;
 
 protected:
 
     // ---- User options
-    focusRegion  focusRegion_;
-    scalar       sigma_;
-    scalar       coreWeight_;
-    scalar       peripheryWeight1_;
-    scalar       peripheryWeight2_;
-    functionType functionType_;
-    word         resultName_;
-    Switch       debug_;
+    focusRegion      focusRegion_;
+    scalar           sigma_;
+    scalar           coreWeight_;
+    scalar           peripheryWeight1_;
+    scalar           peripheryWeight2_;
+    transferFunction transferFunction_;
+    word             resultName_;
+    Switch           debug_;
 
     // ---- Region definition 
     // TODO: address 'momentumError' procedure beacause isn't working

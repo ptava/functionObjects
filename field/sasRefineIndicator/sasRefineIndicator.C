@@ -44,10 +44,10 @@ const Foam::Enum<sasRefineIndicator::focusRegion> sasRefineIndicator::focusRegio
     { sasRefineIndicator::focusRegion::combined,  "combined" }
 });
 
-const Foam::Enum<sasRefineIndicator::functionType> sasRefineIndicator::functionTypeNames_
+const Foam::Enum<sasRefineIndicator::transferFunction> sasRefineIndicator::transferFunctionNames_
 ({
-    { sasRefineIndicator::functionType::constant, "constant" },
-    { sasRefineIndicator::functionType::gaussian, "gaussian" }
+    { sasRefineIndicator::transferFunction::constant, "constant" },
+    { sasRefineIndicator::transferFunction::oddScaler, "oddScaler" }
 });
 
 defineTypeNameAndDebug(sasRefineIndicator, 0);
@@ -244,7 +244,7 @@ void sasRefineIndicator::calcIndicator()
     {
         case focusRegion::core:
             // compute fldI based on the function name selected
-            fldI = functionType_ == functionType::constant
+            fldI = transferFunction_ == transferFunction::constant
                 ? markCoreConstant(cellLabels, C1I, C2I, coreWeight_)
                 : markCoreOddScaler(cellLabels, C1I, C2I, coreWeight_, sigma_);
             break;
@@ -291,8 +291,8 @@ bool sasRefineIndicator::read(const dictionary& dict)
     // Testing
     if (focusRegion_ == focusRegion::core)
     {
-        functionType_ = functionTypeNames_.getOrDefault(
-            "functionType", dict, functionType::constant
+        transferFunction_ = transferFunctionNames_.getOrDefault(
+            "transferFunction", dict, transferFunction::constant
         );
     }
 
