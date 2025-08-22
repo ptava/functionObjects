@@ -118,7 +118,7 @@ tmp<volScalarField::Internal> sasRefineIndicator::markCoreConstant
         // Calculate the difference between c2 and c1 for each cell
         // and apply constant value to all positive values.
         scalar d = c2[i] - c1[i];
-        G[i] = d > 0 ? coreWeight : -GREAT;
+        G[i] = d > 0.0 ? coreWeight : -GREAT;
     }
 
     return tG;
@@ -165,6 +165,49 @@ tmp<volScalarField::Internal> sasRefineIndicator::markCoreGaussian
     return tG;
 }
 
+tmp<volScalarField::Internal> sasRefineIndicator::markPeripheryGaussian
+(
+    const labelList& cellLabels,
+    const volScalarField::Internal& Lvk,
+    const volScalarField::Internal& c2,
+    const scalar peripheryWeight1,
+    const scalar peripheryWeight2,
+    const scalar sigma
+) const
+{
+    const scalar invTwoSigma = 0.5/(sigma*sigma);
+
+    tmp<volScalarField::Internal> tG
+    (
+        new volScalarField::Internal
+        (
+            IOobject
+            (
+                "tmpG",
+                mesh_.time().timeName(),
+                mesh_.thisDb(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                false
+            ),
+            mesh_,
+            dimensionedScalar(dimless, -GREAT)
+        )
+    );
+
+    auto& G = tG.ref();
+    for (const label i : cellLabels)
+    {
+        // Calculate normalised von Karman length scale for each cell
+        // and apply the Gaussian function to get the indicator value.
+        scalar nLvk = Lvk[i] / c2[i];
+        G[i] = peripheryWeight1 * exp(-invTwoSigma * pow(nLvk - 1, 2))
+             - peripheryWeight2 * pow(nLvk - 1, 2);
+    }
+
+    return tG;
+}
+
 // * * * * * * * * * * * * * *  Calculation  * * * * * * * * * * * * * * * * //
 
 void sasRefineIndicator::calcIndicator()
@@ -204,10 +247,17 @@ void sasRefineIndicator::calcIndicator()
             fldI = functionType_ == functionType::constant
                 ? markCoreConstant(cellLabels, C1I, C2I, coreWeight_)
                 : markCoreGaussian(cellLabels, C1I, C2I, coreWeight_, sigma_);
-            // fldI = markCoreConstant(cellLabels, C1I, C2I, coreWeight_);
-            // fldI = markCoreGaussian(cellLabels, C1I, C2I, coreWeight_, sigma_);
             break;
         case focusRegion::periphery:
+            fldI = markPeripheryGaussian
+            (
+                cellLabels,
+                LvkI,
+                C2I,
+                peripheryWeight1_,
+                peripheryWeight2_,
+                sigma_
+            );
             break;
         case focusRegion::combined:
             break;
@@ -233,7 +283,8 @@ bool sasRefineIndicator::read(const dictionary& dict)
     resultName_ = dict.getOrDefault<word>("result", "sasRefineIndicator");
     sigma_ = dict.getOrDefault<scalar>("sigma", 0.05);
     coreWeight_ = dict.getOrDefault<scalar>("coreWeight", 10.0);
-    peripheryWeight_ = dict.getOrDefault<>("peripheryWeight", 1.0);
+    peripheryWeight1_ = dict.getOrDefault<scalar>("peripheryWeight1", 10.0);
+    peripheryWeight2_ = dict.getOrDefault<scalar>("peripheryWeight2", 1000.0);
     debug_ = dict.getOrDefault<Switch>("debug", false);
     focusRegion_ = focusRegionNames_.get("focusRegion", dict);
 
@@ -270,7 +321,8 @@ bool sasRefineIndicator::read(const dictionary& dict)
             << "  focusRegion      : " << focusRegionNames_[focusRegion_] << nl
             << "  sigma            : " << sigma_ << nl
             << "  coreWeight       : " << coreWeight_ << nl
-            << "  peripheryWeight  : " << peripheryWeight_ << nl
+            << "  peripheryWeight1 : " << peripheryWeight1_ << nl
+            << "  peripheryWeight2 : " << peripheryWeight2_ << nl
             << "  result           : " << resultName_ << nl
             << "  regionName       : " << regionName_ << nl
             << endl;

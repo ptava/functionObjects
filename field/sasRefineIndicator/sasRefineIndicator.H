@@ -93,7 +93,8 @@ protected:
     focusRegion  focusRegion_;
     scalar       sigma_;
     scalar       coreWeight_;
-    scalar       peripheryWeight_;
+    scalar       peripheryWeight1_;
+    scalar       peripheryWeight2_;
     functionType functionType_;
     word         resultName_;
     Switch       debug_;
@@ -108,7 +109,7 @@ protected:
 
     // ---- Helpers
 
-    //- Transform field via constant value (applyed only on some cells)
+    //- Transform field via constant value
     tmp<volScalarField::Internal> markCoreConstant
     (
         const labelList& cellLabels,
@@ -117,13 +118,24 @@ protected:
         const scalar coreWeight
     ) const;
 
-    //- Transform field via gaussian function (applyed on whole region)
+    //- Transform field via gaussian function
     tmp<volScalarField::Internal> markCoreGaussian
     (
         const labelList& cellLabels,
         const volScalarField::Internal& c1,
         const volScalarField::Internal& c2,
         const scalar coreWeight,
+        const scalar sigma
+    ) const;
+
+    //- Transform field via gaussian function
+    tmp<volScalarField::Internal> markPeripheryGaussian
+    (
+        const labelList& cellLabels,
+        const volScalarField::Internal& Lvk,
+        const volScalarField::Internal& c2,
+        const scalar peripheryWeight1,
+        const scalar peripheryWeight2,
         const scalar sigma
     ) const;
 
