@@ -124,7 +124,7 @@ tmp<volScalarField::Internal> sasRefineIndicator::markCoreConstant
     return tG;
 }
 
-tmp<volScalarField::Internal> sasRefineIndicator::markCoreGaussian
+tmp<volScalarField::Internal> sasRefineIndicator::markCoreOddScaler
 (
     const labelList& cellLabels,
     const volScalarField::Internal& c1,
@@ -157,15 +157,15 @@ tmp<volScalarField::Internal> sasRefineIndicator::markCoreGaussian
     for (const label i : cellLabels)
     {
         // Calculate the difference between c2 and c1 for each cell
-        // and apply the Gaussian function to get the indicator value.
+        // and apply an odd, monotonic, sign-preserving function
         scalar d = c2[i] - c1[i];
-        G[i] = d * (1 + coreWeight * (1 - exp(-invTwoSigma * d * d)));
+        G[i] = d * (1 + coreWeight * (1 - exp(invTwoSigma * d * d)));
     }
 
     return tG;
 }
 
-tmp<volScalarField::Internal> sasRefineIndicator::markPeripheryGaussian
+tmp<volScalarField::Internal> sasRefineIndicator::markPeripheryGaussSink
 (
     const labelList& cellLabels,
     const volScalarField::Internal& Lvk,
@@ -246,10 +246,10 @@ void sasRefineIndicator::calcIndicator()
             // compute fldI based on the function name selected
             fldI = functionType_ == functionType::constant
                 ? markCoreConstant(cellLabels, C1I, C2I, coreWeight_)
-                : markCoreGaussian(cellLabels, C1I, C2I, coreWeight_, sigma_);
+                : markCoreOddScaler(cellLabels, C1I, C2I, coreWeight_, sigma_);
             break;
         case focusRegion::periphery:
-            fldI = markPeripheryGaussian
+            fldI = markPeripheryGaussSink
             (
                 cellLabels,
                 LvkI,

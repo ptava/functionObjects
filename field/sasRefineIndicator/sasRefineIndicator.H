@@ -28,15 +28,41 @@ Class
     Foam::functionObjects::sasRefineIndicator
 
 Description
-    This function object calculates a field for mesh refinement based for
-    kOmegaSSTSAS turbulence model, looking at its formulation of the von Karman
-    length scale.
+    Function object for generating a refinement indicator field for dynamic mesh
+    refinement
 
-    Lvk = max(c1, c2)
-    where c2 stands for the `high wave number damper`, i.e. grid filter
+    Indicator derived from the von Kármán length scale (Lvk) in the kOmegaSSTSAS
+    turbulence model formulation.
 
-    Procecess Lvk in order to obtain the refinement field that leads to refine
-    where the grid filter is active
+    Options are provided to enphasise different regions of the flow:
+
+    1. focusRegion == core
+        - Procecess Lvk in order to obtain the refinement field that leads to
+        refine where the grid filter is active, ideally in the core of detected
+        eddies.
+        - Transfer function to mark cells: using a constant value function or an
+        odd, monotonic, sign-preserving function that behaves linear near 0
+        (slope 1) and approaches a scaled line (slope 1+coreWeight) for large
+        ∣d|, it uses a Gaussian factor to modulate the slope (markWithConstant
+        or markWithOddScaler)
+
+    2. FocusRegion == periphery
+        - Procecess nLvk in order to obtain the refinement field that leads to
+        refine in the periphery of detected eddies.
+        - Transfer function to mark cells: is gaussian-like function centered in
+        nLvk=1 minus a quadratic term (markPeripheryGaussSink)
+
+    3. focusRegion == combined
+        - Combine the two above
+
+    where:
+        - $L_{vk} = max(c_1, c_1)$ where:
+        - $c_1$ is the actual length scale;
+        - $c_2$ is the high wave number number damper linked to the grid size.
+        - $nLvk = Lvk / c2$
+
+    Designed for use with dynamicRefineFvMesh to adapt the mesh around turbulent
+    structures.
 
 See also
     Foam::functionObjects::fieldExpression
@@ -119,7 +145,7 @@ protected:
     ) const;
 
     //- Transform field via gaussian function
-    tmp<volScalarField::Internal> markCoreGaussian
+    tmp<volScalarField::Internal> markCoreOddScaler
     (
         const labelList& cellLabels,
         const volScalarField::Internal& c1,
@@ -129,7 +155,7 @@ protected:
     ) const;
 
     //- Transform field via gaussian function
-    tmp<volScalarField::Internal> markPeripheryGaussian
+    tmp<volScalarField::Internal> markPeripheryGaussSink
     (
         const labelList& cellLabels,
         const volScalarField::Internal& Lvk,
