@@ -123,7 +123,6 @@ protected:
     scalar           peripheryWeight2_;
     transferFunction transferFunction_;
     word             resultName_;
-    Switch           debug_;
 
     // ---- Region definition 
     // TODO: address 'momentumError' procedure beacause isn't working

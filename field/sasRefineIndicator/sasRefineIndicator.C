@@ -133,7 +133,7 @@ tmp<volScalarField::Internal> sasRefineIndicator::markCoreOddScaler
     const scalar sigma
 ) const
 {
-    const scalar invTwoSigma = 0.5/(sigma*sigma);
+    const scalar invTwoSigma = 0.5/sqr(sigma);
 
     tmp<volScalarField::Internal> tG
     (
@@ -159,7 +159,7 @@ tmp<volScalarField::Internal> sasRefineIndicator::markCoreOddScaler
         // Calculate the difference between c2 and c1 for each cell
         // and apply an odd, monotonic, sign-preserving function
         scalar d = c2[i] - c1[i];
-        G[i] = d * (1 + coreWeight * (1 - exp(invTwoSigma * d * d)));
+        G[i] = d * (1 + coreWeight * (1 - exp(-invTwoSigma * sqr(d))));
     }
 
     return tG;
@@ -175,7 +175,7 @@ tmp<volScalarField::Internal> sasRefineIndicator::markPeripheryGaussSink
     const scalar sigma
 ) const
 {
-    const scalar invTwoSigma = 0.5/(sigma*sigma);
+    const scalar invTwoSigma = 0.5/(sqr(sigma));
 
     tmp<volScalarField::Internal> tG
     (
@@ -201,8 +201,8 @@ tmp<volScalarField::Internal> sasRefineIndicator::markPeripheryGaussSink
         // Calculate normalised von Karman length scale for each cell
         // and apply the Gaussian function to get the indicator value.
         scalar nLvk = Lvk[i] / c2[i];
-        G[i] = peripheryWeight1 * exp(-invTwoSigma * pow(nLvk - 1, 2))
-             - peripheryWeight2 * pow(nLvk - 1, 2);
+        G[i] = peripheryWeight1 * exp(-invTwoSigma * sqr(nLvk - 1))
+             - peripheryWeight2 * sqr(nLvk - 1);
     }
 
     return tG;
@@ -263,12 +263,10 @@ void sasRefineIndicator::calcIndicator()
             break;
     }
 
-    if (debug_)
-    {
-        Info<< type() << " '" << name() << "': indicator range = ["
-            << gMin(fld.internalField()) << ", "
-            << gMax(fld.internalField()) << "]" << nl;
-    }
+    DebugInfo
+        << type() << " '" << name() << "': indicator range = ["
+        << gMin(fld.internalField()) << ", "
+        << gMax(fld.internalField()) << "]" << nl;
 }
 
 // * * * * * * * * * * * * * *  Read/Execute/Write  * * * * * * * * * * * * * //
@@ -285,7 +283,6 @@ bool sasRefineIndicator::read(const dictionary& dict)
     coreWeight_ = dict.getOrDefault<scalar>("coreWeight", 10.0);
     peripheryWeight1_ = dict.getOrDefault<scalar>("peripheryWeight1", 10.0);
     peripheryWeight2_ = dict.getOrDefault<scalar>("peripheryWeight2", 1000.0);
-    debug_ = dict.getOrDefault<Switch>("debug", false);
     focusRegion_ = focusRegionNames_.get("focusRegion", dict);
 
     // Testing
@@ -315,7 +312,7 @@ bool sasRefineIndicator::read(const dictionary& dict)
             << "'sigma' must be > 0 (got " << sigma_ << ")." << exit(FatalIOError);
     }
 
-    if (this->log)
+    if (log)
     {
         Info<< type() << ' ' << name() << ':' << nl
             << "  focusRegion      : " << focusRegionNames_[focusRegion_] << nl
@@ -327,6 +324,9 @@ bool sasRefineIndicator::read(const dictionary& dict)
             << "  regionName       : " << regionName_ << nl
             << endl;
     }
+
+    DebugInfo
+        << type() << " '" << name() << "': read configuration." << nl;
 
     return true;
 }
