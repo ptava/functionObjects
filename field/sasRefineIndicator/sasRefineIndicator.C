@@ -281,8 +281,8 @@ bool sasRefineIndicator::read(const dictionary& dict)
     resultName_ = dict.getOrDefault<word>("result", "sasRefineIndicator");
     sigma_ = dict.getOrDefault<scalar>("sigma", 0.05);
     coreWeight_ = dict.getOrDefault<scalar>("coreWeight", 10.0);
-    peripheryWeight1_ = dict.getOrDefault<scalar>("peripheryWeight1", 10.0);
-    peripheryWeight2_ = dict.getOrDefault<scalar>("peripheryWeight2", 1000.0);
+    peripheryWeight1_ = dict.getOrDefault<scalar>("peripheryWeight1", 1000.0);
+    peripheryWeight2_ = dict.getOrDefault<scalar>("peripheryWeight2", 10.0);
     focusRegion_ = focusRegionNames_.get("focusRegion", dict);
 
     // Testing
@@ -341,9 +341,8 @@ bool sasRefineIndicator::execute()
 
 bool sasRefineIndicator::write()
 {
-    Log << " functionObjects::" << type() << ' ' << name();
-
-    Log << " writing field: " << resultName_ << nl
+    Info << " functionObjects::" << type() << ' ' << name();
+    Info << " writing field: " << resultName_ << nl
         << " for region: " << regionName_ << endl;
     const auto& fld = mesh_.lookupObject<volScalarField>(resultName_);
     fld.write();
